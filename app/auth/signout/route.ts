@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
 
     // Check if we have a user
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
 
     // Check if we have a user

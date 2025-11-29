@@ -30,9 +30,9 @@ export default function ForgotPasswordPage() {
             if (error) throw error
 
             setSuccess(true)
-        } catch (err: any) {
-            console.error(err)
-            setError(err.message || 'Failed to send reset email')
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            setError(message)
         } finally {
             setLoading(false)
         }
@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold text-center text-slate-900">Reset Password</CardTitle>
                     <CardDescription className="text-center">
-                        Enter your email address and we'll send you a link to reset your password.
+                        Enter your email address and we&apos;ll send you a link to reset your password.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

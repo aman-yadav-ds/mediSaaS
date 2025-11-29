@@ -24,11 +24,17 @@ import {
 } from "@/components/ui/select"
 import { Loader2, UserPlus } from "lucide-react"
 
+interface Department {
+    id: string
+    name: string
+    hospital_id: string
+}
+
 export function InviteStaffDialog({ children }: { children?: ReactNode }) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [departments, setDepartments] = useState<any[]>([])
+    const [departments, setDepartments] = useState<Department[]>([])
     const router = useRouter()
     const supabase = createClientComponentClient()
 
@@ -86,8 +92,9 @@ export function InviteStaffDialog({ children }: { children?: ReactNode }) {
             setOpen(false)
             setFormData({ email: '', fullName: '', role: 'nurse', department: '' })
             router.refresh()
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            setError(message)
         } finally {
             setLoading(false)
         }

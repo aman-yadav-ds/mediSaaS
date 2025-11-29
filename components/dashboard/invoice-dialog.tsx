@@ -23,6 +23,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Plus, Trash2, Loader2, Receipt, CreditCard } from "lucide-react"
+import { Visit, Patient, Medication } from '@/types'
 
 interface InvoiceItem {
     description: string
@@ -30,7 +31,11 @@ interface InvoiceItem {
     unitPrice: number
 }
 
-export function InvoiceDialog({ visit }: { visit: any }) {
+interface InvoiceDialogProps {
+    visit: Visit & { patients?: Pick<Patient, 'full_name'> }
+}
+
+export function InvoiceDialog({ visit }: InvoiceDialogProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -45,14 +50,14 @@ export function InvoiceDialog({ visit }: { visit: any }) {
     useEffect(() => {
         const fetchPrescription = async () => {
             if (open) {
-                const { data, error } = await supabase
+                const { data } = await supabase
                     .from('prescriptions')
                     .select('medications')
                     .eq('visit_id', visit.id)
                     .single()
 
                 if (data && data.medications) {
-                    const prescriptionItems = data.medications.map((med: any) => ({
+                    const prescriptionItems = (data.medications as Medication[]).map((med) => ({
                         description: `${med.name} (${med.dosage} - ${med.duration})`,
                         quantity: 1,
                         unitPrice: 0 // Receptionist fills this
@@ -80,10 +85,13 @@ export function InvoiceDialog({ visit }: { visit: any }) {
         setItems(newItems)
     }
 
-    const updateItem = (index: number, field: keyof InvoiceItem, value: any) => {
+    const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
         const newItems = [...items]
-        // @ts-ignore
-        newItems[index][field] = value
+        if (field === 'description') {
+            newItems[index] = { ...newItems[index], [field]: value as string }
+        } else {
+            newItems[index] = { ...newItems[index], [field]: Number(value) }
+        }
         setItems(newItems)
     }
 

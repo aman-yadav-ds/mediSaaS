@@ -57,9 +57,9 @@ export default function UpdatePasswordPage() {
 
             // Redirect to dashboard or login
             router.push('/dashboard')
-        } catch (err: any) {
-            console.error(err)
-            setError(err.message || 'Failed to update password')
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            setError(message)
         } finally {
             setLoading(false)
         }

@@ -1,9 +1,17 @@
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextResponse } from 'next/server'
 
+interface RegisterHospitalRequest {
+    hospitalName: string
+    email: string
+    password: string
+    fullName: string
+    website?: string
+}
+
 export async function POST(req: Request) {
     try {
-        const { hospitalName, email, password, fullName, website } = await req.json()
+        const { hospitalName, email, password, fullName, website } = await req.json() as RegisterHospitalRequest
 
         // Honeypot Check
         if (website) {
@@ -89,10 +97,11 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ success: true, hospitalId: hospital.id })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Registration error:', error)
+        const message = error instanceof Error ? error.message : 'Internal server error'
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: message },
             { status: 500 }
         )
     }

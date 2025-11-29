@@ -3,12 +3,21 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+import { Role } from '@/types'
+
+interface InviteStaffRequest {
+    email: string
+    role: Role
+    fullName: string
+    department?: string
+}
+
 export async function POST(req: Request) {
     try {
-        const { email, role, fullName, department } = await req.json()
+        const { email, role, fullName, department } = await req.json() as InviteStaffRequest
 
         // Validate Role
-        const allowedRoles = ['doctor', 'nurse', 'receptionist']
+        const allowedRoles: Role[] = ['doctor', 'nurse', 'receptionist']
         if (!allowedRoles.includes(role)) {
             return NextResponse.json(
                 { error: 'Invalid role. Must be doctor, nurse, or receptionist.' },
@@ -18,6 +27,7 @@ export async function POST(req: Request) {
 
         // 1. Verify the requester is an Owner
         const cookieStore = await cookies()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
         const { data: { user } } = await supabase.auth.getUser()
 
@@ -60,6 +70,13 @@ export async function POST(req: Request) {
             )
         }
 
+        if (!inviteData.user) {
+            return NextResponse.json(
+                { error: 'Failed to create user' },
+                { status: 500 }
+            )
+        }
+
         // 4. Create Profile for Invited User
         // Note: inviteUserByEmail creates the user in Auth, but we need to link them to the hospital
         const { error: profileError } = await supabaseAdmin
@@ -82,10 +99,11 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ success: true })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Invite error:', error)
+        const message = error instanceof Error ? error.message : 'Internal server error'
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: message },
             { status: 500 }
         )
     }

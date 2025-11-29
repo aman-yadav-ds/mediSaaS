@@ -4,9 +4,11 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Visit, Patient, Vital } from "@/types"
 
 export default async function NurseHistoryPage() {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -48,6 +50,7 @@ export default async function NurseHistoryPage() {
         .eq('hospital_id', profile.hospital_id)
         .neq('status', 'waiting_vitals')
         .order('visit_date', { ascending: false })
+        .returns<(Visit & { patients: Patient, vitals: Vital[] })[]>()
 
     return (
         <div className="space-y-8">
@@ -74,7 +77,7 @@ export default async function NurseHistoryPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {history?.map((visit: any) => {
+                            {history?.map((visit: Visit & { patients: Patient, vitals: Vital[] }) => {
                                 const vital = visit.vitals?.[0] // Assuming one set of vitals per visit
                                 return (
                                     <TableRow key={visit.id} className="hover:bg-slate-50 transition-colors border-b-slate-100">

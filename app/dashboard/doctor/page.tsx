@@ -5,13 +5,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { PrescriptionDialog } from "@/components/dashboard/prescription-dialog" // Need to create this
+import { WaitingTime } from "@/components/dashboard/waiting-time"
+import { RealtimeVisitsListener } from "@/components/dashboard/realtime-visits-listener"
+import { Visit, Patient, Vital } from "@/types"
 
 export default async function DoctorPage() {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user }, error } = await supabase.auth.getUser()
 
     if (error || !user) redirect('/auth/signout')
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('hospital_id')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile?.hospital_id) redirect('/auth/signout')
 
     // Fetch visits assigned to me
     const { data: visits } = await supabase
@@ -39,9 +51,11 @@ export default async function DoctorPage() {
         .eq('status', 'waiting_doctor')
         .eq('doctor_id', user.id)
         .order('visit_date', { ascending: true })
+        .returns<(Visit & { patients: Patient, vitals: Vital[] })[]>()
 
     return (
         <div className="space-y-8">
+            <RealtimeVisitsListener hospitalId={profile.hospital_id} />
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Doctor Portal</h1>
@@ -71,7 +85,7 @@ export default async function DoctorPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visits?.map((visit: any) => {
+                            {visits?.map((visit: Visit & { patients: Patient, vitals: Vital[] }) => {
                                 // Get latest vitals (should be only one per visit usually)
                                 const latestVitals = visit.vitals?.[0] || {}
                                 return (
@@ -81,11 +95,14 @@ export default async function DoctorPage() {
                                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
                                                     {visit.patients?.full_name?.[0] || 'P'}
                                                 </div>
-                                                {visit.patients?.full_name}
+                                                <div>
+                                                    <div className="font-medium text-slate-900">{visit.patients?.full_name}</div>
+                                                    <WaitingTime startTime={visit.visit_date} />
+                                                </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-slate-600">{visit.patients?.age} yrs / {visit.patients?.gender}</TableCell>
-                                        <TableCell className="text-slate-600 max-w-[200px] truncate" title={visit.chief_complaint}>
+                                        <TableCell className="text-slate-600 max-w-[200px] truncate" title={visit.chief_complaint || ''}>
                                             {visit.chief_complaint}
                                         </TableCell>
                                         <TableCell>

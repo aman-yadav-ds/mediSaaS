@@ -18,17 +18,32 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, Stethoscope, Plus, Trash2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
 import { PatientHistory } from "./patient-history"
 
-export function PrescriptionDialog({ visit }: { visit: any }) {
+import { Visit, Patient } from '@/types'
+
+interface PrescriptionDialogProps {
+    visit: Visit & { patients?: Patient }
+}
+
+interface Medication {
+    name: string
+    dosage: string
+    frequency: string
+    duration: string
+}
+
+export function PrescriptionDialog({ visit }: PrescriptionDialogProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
+    const { toast } = useToast()
     const supabase = createClientComponentClient()
 
     const [diagnosis, setDiagnosis] = useState('')
     const [notes, setNotes] = useState('')
-    const [medications, setMedications] = useState<{ name: string; dosage: string; frequency: string; duration: string }[]>([
+    const [medications, setMedications] = useState<Medication[]>([
         { name: '', dosage: '', frequency: '', duration: '' }
     ])
 
@@ -42,9 +57,8 @@ export function PrescriptionDialog({ visit }: { visit: any }) {
         setMedications(newMeds)
     }
 
-    const updateMedication = (index: number, field: string, value: string) => {
+    const updateMedication = (index: number, field: keyof Medication, value: string) => {
         const newMeds = [...medications]
-        // @ts-ignore
         newMeds[index][field] = value
         setMedications(newMeds)
     }
@@ -91,11 +105,20 @@ export function PrescriptionDialog({ visit }: { visit: any }) {
 
             if (visitError) throw visitError
 
+            toast({
+                title: "Prescription Saved",
+                description: "The prescription has been saved and sent to billing.",
+            })
+
             setOpen(false)
             router.refresh()
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err)
-            alert('Failed to save prescription')
+            toast({
+                title: "Error",
+                description: "Failed to save prescription. Please try again.",
+                variant: "destructive"
+            })
         } finally {
             setLoading(false)
         }
@@ -155,7 +178,6 @@ export function PrescriptionDialog({ visit }: { visit: any }) {
                                                             placeholder="Medication Name"
                                                             value={med.name}
                                                             onChange={(e) => updateMedication(index, 'name', e.target.value)}
-                                                            required
                                                             className="bg-white h-8 text-sm"
                                                         />
                                                     </div>
@@ -189,7 +211,6 @@ export function PrescriptionDialog({ visit }: { visit: any }) {
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => removeMedication(index)}
-                                                    disabled={medications.length === 1}
                                                     className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
                                                 >
                                                     <Trash2 className="w-4 h-4" />

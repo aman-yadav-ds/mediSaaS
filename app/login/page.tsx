@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Loader2, Building2 } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -25,7 +26,7 @@ export default function LoginPage() {
             // Check for hash in URL (implicit flow)
             if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
                 setLoading(true)
-                console.log('Login: Detected hash fragment, attempting manual session set')
+
 
                 // Parse hash manually
                 const hash = window.location.hash.substring(1)
@@ -45,7 +46,6 @@ export default function LoginPage() {
                             setError('Failed to log in from link')
                             setLoading(false)
                         } else if (data.session) {
-                            console.log('Login: Session set successfully from hash')
                             router.replace('/dashboard')
                             return
                         }
@@ -61,7 +61,6 @@ export default function LoginPage() {
         const checkSession = async () => {
             const { data: { user } } = await supabase.auth.getUser()
             if (user) {
-                console.log('Login: Session found via getUser')
                 router.replace('/dashboard')
             }
         }
@@ -70,7 +69,6 @@ export default function LoginPage() {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' || session) {
-                console.log('Login: Auth state changed to SIGNED_IN')
                 router.replace('/dashboard')
             }
         })
@@ -95,8 +93,12 @@ export default function LoginPage() {
 
             router.push('/dashboard')
             // router.refresh()
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message)
+            } else {
+                setError('An unknown error occurred')
+            }
         } finally {
             setLoading(false)
         }
@@ -110,12 +112,12 @@ export default function LoginPage() {
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-3xl -z-10" />
 
                 <div className="relative z-10">
-                    <div className="flex items-center gap-2">
+                    <Link href="/" className="flex items-center gap-2 w-fit hover:opacity-90 transition-opacity">
                         <div className="bg-blue-600 p-1.5 rounded-lg">
                             <Building2 className="h-6 w-6 text-white" />
                         </div>
                         <span className="text-xl font-bold">MediSaaS</span>
-                    </div>
+                    </Link>
                 </div>
 
                 <div className="relative z-10 space-y-6 max-w-lg">
@@ -123,7 +125,7 @@ export default function LoginPage() {
                         Manage your hospital with confidence and security.
                     </h2>
                     <p className="text-slate-400 text-lg">
-                        "MediSaaS has revolutionized how we handle patient data. The security and ease of use are unmatched."
+                        &quot;MediSaaS has revolutionized how we handle patient data. The security and ease of use are unmatched.&quot;
                     </p>
                     <div className="flex items-center gap-4 pt-4">
                         <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-xl font-bold">
@@ -198,7 +200,7 @@ export default function LoginPage() {
                                     Sign In
                                 </Button>
                                 <div className="text-sm text-center text-slate-500">
-                                    Don't have an account?{' '}
+                                    Don&apos;t have an account?{' '}
                                     <a href="/register-hospital" className="text-blue-600 hover:underline font-medium">
                                         Register New Hospital
                                     </a>

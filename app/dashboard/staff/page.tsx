@@ -10,6 +10,7 @@ import { EditStaffDialog } from "@/components/dashboard/edit-staff-dialog"
 
 export default async function StaffPage() {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -76,9 +77,9 @@ export default async function StaffPage() {
                                     <TableCell className="text-slate-600">{member.email}</TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className={`capitalize ${member.role === 'doctor' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
-                                                member.role === 'nurse' ? 'border-purple-200 bg-purple-50 text-purple-700' :
-                                                    member.role === 'receptionist' ? 'border-orange-200 bg-orange-50 text-orange-700' :
-                                                        'border-slate-200 bg-slate-50 text-slate-700'
+                                            member.role === 'nurse' ? 'border-purple-200 bg-purple-50 text-purple-700' :
+                                                member.role === 'receptionist' ? 'border-orange-200 bg-orange-50 text-orange-700' :
+                                                    'border-slate-200 bg-slate-50 text-slate-700'
                                             }`}>
                                             {member.role}
                                         </Badge>

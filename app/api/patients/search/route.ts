@@ -14,6 +14,7 @@ export async function GET(req: Request) {
 
         // 1. Verify Authentication
         const cookieStore = await cookies()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
         const { data: { user } } = await supabase.auth.getUser()
 
@@ -38,7 +39,7 @@ export async function GET(req: Request) {
         // 4. Search for patient (Scoped to Hospital)
         const { data: patients, error } = await supabaseAdmin
             .from('patients')
-            .select('*')
+            .select('id, full_name, age, gender, contact_number, aadhar_number')
             .eq('aadhar_number', aadhar)
             .eq('hospital_id', requesterProfile.hospital_id) // CRITICAL SECURITY FIX
             .limit(1)
@@ -47,10 +48,11 @@ export async function GET(req: Request) {
 
         return NextResponse.json({ patient: patients && patients.length > 0 ? patients[0] : null })
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Search error:', error)
+        const message = error instanceof Error ? error.message : 'Internal server error'
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: message },
             { status: 500 }
         )
     }

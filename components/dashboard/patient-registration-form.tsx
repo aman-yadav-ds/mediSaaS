@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea" // Need to install textarea or use Input
+
 import {
     Select,
     SelectContent,
@@ -15,8 +15,17 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
+import { Patient } from '@/types'
 
-export function PatientRegistrationForm({ initialData }: { initialData?: any }) {
+export function PatientRegistrationForm({
+    initialData,
+    onSuccess,
+    registrationOnly = false
+}: {
+    initialData?: Partial<Patient>,
+    onSuccess?: (patient: Patient) => void,
+    registrationOnly?: boolean
+}) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const router = useRouter()
@@ -50,15 +59,16 @@ export function PatientRegistrationForm({ initialData }: { initialData?: any }) 
             if (!profile?.hospital_id) throw new Error('No hospital found')
 
             let patientId = initialData?.id
+            let patientData = null
 
-            // 1. Create/Get Patient
+            // 1. Create/Get/Update Patient
             if (!patientId) {
                 const { data: newPatient, error: insertError } = await supabase
                     .from('patients')
                     .insert({
                         hospital_id: profile.hospital_id, // Home hospital
                         full_name: formData.fullName,
-                        age: parseInt(formData.age),
+                        age: parseInt(formData.age) || 0,
                         gender: formData.gender,
                         contact_number: formData.contactNumber,
                         aadhar_number: formData.aadharNumber,
@@ -69,6 +79,33 @@ export function PatientRegistrationForm({ initialData }: { initialData?: any }) 
 
                 if (insertError) throw insertError
                 patientId = newPatient.id
+                patientData = newPatient
+            } else {
+                // Update existing patient
+                const { data: updatedPatient, error: updateError } = await supabase
+                    .from('patients')
+                    .update({
+                        full_name: formData.fullName,
+                        age: parseInt(formData.age) || 0,
+                        gender: formData.gender,
+                        contact_number: formData.contactNumber,
+                        aadhar_number: formData.aadharNumber,
+                    })
+                    .eq('id', patientId)
+                    .select()
+                    .single()
+
+                if (updateError) throw updateError
+                patientData = updatedPatient
+            }
+
+            // If registration only, return here
+            if (registrationOnly) {
+                if (onSuccess && patientData) {
+                    onSuccess(patientData)
+                }
+                setLoading(false)
+                return
             }
 
             // 2. Create Visit
@@ -93,8 +130,9 @@ export function PatientRegistrationForm({ initialData }: { initialData?: any }) 
                 aadharNumber: '',
             })
             router.refresh()
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            setError(message)
         } finally {
             setLoading(false)
         }
@@ -166,34 +204,55 @@ export function PatientRegistrationForm({ initialData }: { initialData?: any }) 
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="contact" className="text-xs font-medium text-slate-500 uppercase">Contact Number</Label>
-                    <Input
-                        id="contact"
-                        value={formData.contactNumber}
-                        onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
-                        required
-                        className="bg-slate-50 border-slate-200 focus:bg-white transition-all"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="complaint" className="text-xs font-medium text-slate-500 uppercase">Chief Complaint</Label>
-                    <Input
-                        id="complaint"
-                        value={formData.chiefComplaint}
-                        onChange={(e) => setFormData({ ...formData, chiefComplaint: e.target.value })}
-                        required
-                        placeholder="e.g. Fever, Headache"
-                        className="bg-slate-50 border-slate-200 focus:bg-white transition-all"
-                    />
-                </div>
-            </div>
+
+
+            {
+                !registrationOnly && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="contact" className="text-xs font-medium text-slate-500 uppercase">Contact Number</Label>
+                            <Input
+                                id="contact"
+                                value={formData.contactNumber}
+                                onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                                required
+                                className="bg-slate-50 border-slate-200 focus:bg-white transition-all"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="complaint" className="text-xs font-medium text-slate-500 uppercase">Chief Complaint</Label>
+                            <Input
+                                id="complaint"
+                                value={formData.chiefComplaint}
+                                onChange={(e) => setFormData({ ...formData, chiefComplaint: e.target.value })}
+                                required
+                                placeholder="e.g. Fever, Headache"
+                                className="bg-slate-50 border-slate-200 focus:bg-white transition-all"
+                            />
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                registrationOnly && (
+                    <div className="space-y-2">
+                        <Label htmlFor="contact" className="text-xs font-medium text-slate-500 uppercase">Contact Number</Label>
+                        <Input
+                            id="contact"
+                            value={formData.contactNumber}
+                            onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                            required
+                            className="bg-slate-50 border-slate-200 focus:bg-white transition-all"
+                        />
+                    </div>
+                )
+            }
 
             <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200/50 transition-all hover:scale-[1.02]" disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                 Register Patient
             </Button>
-        </form>
+        </form >
     )
 }

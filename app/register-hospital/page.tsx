@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,7 +18,6 @@ export default function RegisterHospitalPage() {
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
     const router = useRouter()
-    const supabase = createClientComponentClient()
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -48,8 +46,9 @@ export default function RegisterHospitalPage() {
 
             // Registration successful
             setSuccess(true)
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            setError(message)
         } finally {
             setLoading(false)
         }

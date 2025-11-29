@@ -23,14 +23,28 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Loader2, Activity } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
-export function VitalsDialog({ visit }: { visit: any }) {
+import { Visit, Patient, Profile } from '@/types'
+
+interface VitalsDialogProps {
+    visit: Visit & { patients?: Patient }
+}
+
+interface Department {
+    id: string
+    name: string
+    hospital_id: string
+}
+
+export function VitalsDialog({ visit }: VitalsDialogProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [doctors, setDoctors] = useState<any[]>([])
-    const [departments, setDepartments] = useState<any[]>([])
+    const [doctors, setDoctors] = useState<Pick<Profile, 'id' | 'full_name' | 'department'>[]>([])
+    const [departments, setDepartments] = useState<Department[]>([])
     const [vitalsError, setVitalsError] = useState<string | null>(null)
     const router = useRouter()
+    const { toast } = useToast()
     const supabase = createClientComponentClient()
 
     const [formData, setFormData] = useState({
@@ -74,6 +88,19 @@ export function VitalsDialog({ visit }: { visit: any }) {
         setLoading(true)
         setVitalsError(null)
 
+        // Validation
+        if (!formData.department && !formData.isEmergency) {
+            setVitalsError("Please select a department.")
+            setLoading(false)
+            return
+        }
+
+        if (!formData.doctorId) {
+            setVitalsError("Please assign a doctor to proceed.")
+            setLoading(false)
+            return
+        }
+
         try {
             const { data: { user } } = await supabase.auth.getUser()
 
@@ -86,9 +113,9 @@ export function VitalsDialog({ visit }: { visit: any }) {
                     visit_id: visit.id,
                     recorded_by: user?.id,
                     blood_pressure: formData.bp || null,
-                    heart_rate: formData.heartRate ? parseInt(formData.heartRate) : null,
-                    temperature: formData.temperature ? parseFloat(formData.temperature) : null,
-                    oxygen_level: formData.oxygen ? parseInt(formData.oxygen) : null,
+                    heart_rate: formData.heartRate ? parseInt(formData.heartRate) || null : null,
+                    temperature: formData.temperature ? parseFloat(formData.temperature) || null : null,
+                    oxygen_level: formData.oxygen ? parseInt(formData.oxygen) || null : null,
                 })
 
             if (vitalsError) throw vitalsError
@@ -115,9 +142,21 @@ export function VitalsDialog({ visit }: { visit: any }) {
                 department: '',
                 isEmergency: false
             })
+
+            toast({
+                title: "Vitals Recorded",
+                description: "Vitals have been successfully recorded.",
+            })
+
             router.refresh()
-        } catch (err: any) {
-            setVitalsError(err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            setVitalsError(message)
+            toast({
+                title: "Error",
+                description: message,
+                variant: "destructive"
+            })
         } finally {
             setLoading(false)
         }

@@ -23,11 +23,18 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Loader2, Pencil } from "lucide-react"
+import { Profile, Role } from '@/types'
 
-export function EditStaffDialog({ staff }: { staff: any }) {
+interface Department {
+    id: string
+    name: string
+    hospital_id: string
+}
+
+export function EditStaffDialog({ staff }: { staff: Profile }) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [departments, setDepartments] = useState<any[]>([])
+    const [departments, setDepartments] = useState<Department[]>([])
     const router = useRouter()
     const supabase = createClientComponentClient()
 
@@ -70,8 +77,9 @@ export function EditStaffDialog({ staff }: { staff: any }) {
 
             setOpen(false)
             router.refresh()
-        } catch (err: any) {
-            alert('Failed to update staff: ' + err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            alert('Failed to update staff: ' + message)
         } finally {
             setLoading(false)
         }
@@ -111,7 +119,7 @@ export function EditStaffDialog({ staff }: { staff: any }) {
                             </Label>
                             <Select
                                 value={formData.role}
-                                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                                onValueChange={(value) => setFormData({ ...formData, role: value as Role })}
                             >
                                 <SelectTrigger className="col-span-3">
                                     <SelectValue placeholder="Select a role" />

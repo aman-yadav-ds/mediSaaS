@@ -4,11 +4,13 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Visit, Invoice, Patient, Profile } from "@/types"
 import { InvoiceDialog } from "@/components/dashboard/invoice-dialog"
 import { DollarSign, Receipt, Clock } from "lucide-react"
 
 export default async function BillingPage() {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -47,7 +49,8 @@ export default async function BillingPage() {
             .eq('status', 'waiting_billing')
             .eq('payment_status', 'pending')
             .eq('hospital_id', profile.hospital_id)
-            .order('visit_date', { ascending: false }),
+            .order('visit_date', { ascending: false })
+            .returns<(Visit & { patients: Patient, profiles: Profile })[]>(),
         supabase
             .from('invoices')
             .select(`
@@ -62,6 +65,7 @@ export default async function BillingPage() {
             .eq('hospital_id', profile.hospital_id)
             .order('created_at', { ascending: false })
             .limit(10)
+            .returns<(Invoice & { patients: Patient })[]>()
     ])
 
     const pendingVisits = pendingVisitsResult.data
@@ -121,7 +125,7 @@ export default async function BillingPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {pendingVisits?.map((visit: any) => (
+                                {pendingVisits?.map((visit: Visit & { patients: Patient, profiles: Profile }) => (
                                     <TableRow key={visit.id} className="hover:bg-slate-50 transition-colors border-b-slate-100">
                                         <TableCell className="font-medium pl-6">
                                             <div className="flex flex-col">
@@ -164,7 +168,7 @@ export default async function BillingPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {invoices?.map((invoice: any) => (
+                                {invoices?.map((invoice: Invoice & { patients: Patient }) => (
                                     <TableRow key={invoice.id} className="hover:bg-slate-50 transition-colors border-b-slate-100">
                                         <TableCell className="font-medium pl-6">{invoice.patients?.full_name}</TableCell>
                                         <TableCell className="font-bold text-emerald-600">${invoice.total_amount}</TableCell>

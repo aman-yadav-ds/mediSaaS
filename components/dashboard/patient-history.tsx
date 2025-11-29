@@ -2,24 +2,32 @@
 
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Calendar, Stethoscope, Pill } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
+
+
+import { Visit, Prescription } from '@/types'
 
 interface PatientHistoryProps {
     patientId: string
     currentVisitId: string
 }
 
+interface HistoryVisit extends Visit {
+    prescriptions: Prescription[]
+    profiles: { full_name: string } | null
+}
+
 export function PatientHistory({ patientId, currentVisitId }: PatientHistoryProps) {
-    const [history, setHistory] = useState<any[]>([])
+    const [history, setHistory] = useState<HistoryVisit[]>([])
     const [loading, setLoading] = useState(true)
     const supabase = createClientComponentClient()
 
     useEffect(() => {
         const fetchHistory = async () => {
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('visits')
                 .select(`
                     *,
@@ -36,7 +44,7 @@ export function PatientHistory({ patientId, currentVisitId }: PatientHistoryProp
                 .neq('id', currentVisitId) // Exclude current visit
                 .order('visit_date', { ascending: false })
 
-            if (!error && data) {
+            if (data) {
                 setHistory(data)
             }
             setLoading(false)
@@ -98,7 +106,7 @@ export function PatientHistory({ patientId, currentVisitId }: PatientHistoryProp
 
                             {/* Prescription Details */}
                             {visit.prescriptions && visit.prescriptions.length > 0 ? (
-                                visit.prescriptions.map((prescription: any, idx: number) => (
+                                visit.prescriptions.map((prescription, idx) => (
                                     <div key={idx} className="space-y-3 border-t border-slate-100 pt-3">
                                         <div>
                                             <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-1">
@@ -114,7 +122,7 @@ export function PatientHistory({ patientId, currentVisitId }: PatientHistoryProp
                                                 Medications
                                             </div>
                                             <div className="pl-6 space-y-1">
-                                                {prescription.medications?.map((med: any, mIdx: number) => (
+                                                {prescription.medications?.map((med, mIdx) => (
                                                     <div key={mIdx} className="text-sm text-slate-600 flex justify-between border-b border-slate-50 last:border-0 pb-1 last:pb-0">
                                                         <span className="font-medium">{med.name}</span>
                                                         <span className="text-slate-400">{med.dosage} • {med.frequency} • {med.duration}</span>

@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { User } from '@supabase/supabase-js'
 
-export function SetPasswordDialog({ user }: { user: any }) {
+export function SetPasswordDialog({ user }: { user: User | null }) {
     const [isOpen, setIsOpen] = useState(false)
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -44,7 +45,7 @@ export function SetPasswordDialog({ user }: { user: any }) {
         }
 
         try {
-            const { data, error } = await supabase.auth.updateUser({
+            const { error } = await supabase.auth.updateUser({
                 password: password,
                 data: { is_password_set: true }
             })
@@ -57,8 +58,9 @@ export function SetPasswordDialog({ user }: { user: any }) {
 
             setIsOpen(false)
             router.refresh()
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            setError(message)
         } finally {
             setLoading(false)
         }

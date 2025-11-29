@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { PatientSearch } from "@/components/dashboard/patient-search"
+import { Visit, Patient } from "@/types"
 
 export default async function ReceptionPage() {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -32,6 +34,7 @@ export default async function ReceptionPage() {
             `)
             .order('visit_date', { ascending: false })
             .limit(10)
+            .returns<(Visit & { patients: Patient })[]>()
     ])
 
     const profile = profileResult.data
@@ -89,7 +92,7 @@ export default async function ReceptionPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {visits?.map((visit: any) => (
+                                    {visits?.map((visit: Visit & { patients: Patient }) => (
                                         <TableRow key={visit.id} className="hover:bg-slate-50 transition-colors border-b-slate-100">
                                             <TableCell className="font-medium pl-6">
                                                 <div className="flex items-center gap-3">

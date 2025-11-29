@@ -4,9 +4,11 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Prescription, Patient, Visit } from "@/types"
 
 export default async function DoctorHistoryPage() {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -41,6 +43,7 @@ export default async function DoctorHistoryPage() {
         `)
         .eq('doctor_id', user.id)
         .order('created_at', { ascending: false })
+        .returns<(Prescription & { patients: Patient, visits: Visit })[]>()
 
     return (
         <div className="space-y-8">
@@ -67,7 +70,7 @@ export default async function DoctorHistoryPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {history?.map((record: any) => (
+                            {history?.map((record: Prescription & { patients: Patient, visits: Visit }) => (
                                 <TableRow key={record.id} className="hover:bg-slate-50 transition-colors border-b-slate-100">
                                     <TableCell className="font-medium pl-6">
                                         <div className="flex items-center gap-3">
@@ -83,7 +86,7 @@ export default async function DoctorHistoryPage() {
                                     </TableCell>
                                     <TableCell className="text-right pr-6">
                                         <Badge variant="outline" className={`capitalize ${record.visits?.status === 'completed' ? 'border-green-200 bg-green-50 text-green-700' :
-                                                'border-slate-200 bg-slate-50 text-slate-700'
+                                            'border-slate-200 bg-slate-50 text-slate-700'
                                             }`}>
                                             {record.visits?.status?.replace('_', ' ')}
                                         </Badge>

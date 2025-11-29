@@ -4,15 +4,25 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { VitalsDialog } from "@/components/dashboard/vitals-dialog" // Need to create this
+import { RealtimeVisitsListener } from "@/components/dashboard/realtime-visits-listener"
+import { Visit, Patient } from "@/types"
 
 export default async function NursePage() {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user }, error } = await supabase.auth.getUser()
 
     if (error || !user) redirect('/auth/signout')
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('hospital_id')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile?.hospital_id) redirect('/auth/signout')
 
     // Fetch visits waiting for vitals
     const { data: visits } = await supabase
@@ -27,9 +37,11 @@ export default async function NursePage() {
         `)
         .eq('status', 'waiting_vitals')
         .order('visit_date', { ascending: true })
+        .returns<(Visit & { patients: Patient })[]>()
 
     return (
         <div className="space-y-8">
+            <RealtimeVisitsListener hospitalId={profile.hospital_id} />
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Nurse Station</h1>
@@ -63,7 +75,7 @@ export default async function NursePage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visits?.map((visit: any) => (
+                            {visits?.map((visit: Visit & { patients: Patient }) => (
                                 <TableRow key={visit.id} className="hover:bg-slate-50 transition-colors border-b-slate-100">
                                     <TableCell className="font-medium pl-6">
                                         <div className="flex items-center gap-3">
@@ -74,7 +86,7 @@ export default async function NursePage() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-slate-600">{visit.patients?.age} yrs / {visit.patients?.gender}</TableCell>
-                                    <TableCell className="text-slate-600 max-w-[200px] truncate" title={visit.chief_complaint}>
+                                    <TableCell className="text-slate-600 max-w-[200px] truncate" title={visit.chief_complaint || ''}>
                                         {visit.chief_complaint}
                                     </TableCell>
                                     <TableCell>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,8 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+interface Department {
+    id: string
+    name: string
+    hospital_id: string
+    created_at: string
+}
+
 export function DepartmentsManager({ hospitalId }: { hospitalId: string }) {
-    const [departments, setDepartments] = useState<any[]>([])
+    const [departments, setDepartments] = useState<Department[]>([])
     const [loading, setLoading] = useState(true)
     const [newDept, setNewDept] = useState('')
     const [adding, setAdding] = useState(false)
@@ -17,20 +24,20 @@ export function DepartmentsManager({ hospitalId }: { hospitalId: string }) {
 
     const supabase = createClientComponentClient()
 
-    const fetchDepartments = async () => {
-        const { data, error } = await supabase
+    const fetchDepartments = useCallback(async () => {
+        const { data } = await supabase
             .from('departments')
-            .select('*')
+            .select('id, name, hospital_id, created_at')
             .eq('hospital_id', hospitalId)
             .order('created_at', { ascending: true })
 
         if (data) setDepartments(data)
         setLoading(false)
-    }
+    }, [supabase, hospitalId])
 
     useEffect(() => {
         if (hospitalId) fetchDepartments()
-    }, [hospitalId])
+    }, [fetchDepartments, hospitalId])
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -48,8 +55,9 @@ export function DepartmentsManager({ hospitalId }: { hospitalId: string }) {
 
             setNewDept('')
             fetchDepartments()
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            setError(message)
         } finally {
             setAdding(false)
         }
@@ -66,8 +74,9 @@ export function DepartmentsManager({ hospitalId }: { hospitalId: string }) {
 
             if (error) throw error
             fetchDepartments()
-        } catch (err: any) {
-            alert('Failed to delete: ' + err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'An error occurred'
+            alert('Failed to delete: ' + message)
         }
     }
 

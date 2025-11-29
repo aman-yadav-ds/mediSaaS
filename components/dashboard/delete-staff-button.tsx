@@ -57,7 +57,7 @@ export function DeleteStaffButton({ userId, userName }: DeleteStaffButtonProps) 
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete <strong>{userName}</strong>'s account. This action cannot be undone.
+                        This will permanently delete <strong>{userName}</strong>&apos;s account. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

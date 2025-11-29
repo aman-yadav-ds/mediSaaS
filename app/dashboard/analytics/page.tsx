@@ -17,9 +17,17 @@ import {
 } from 'recharts'
 import { Loader2 } from 'lucide-react'
 
+interface Stats {
+    statusData: { name: string; value: number }[]
+    roleData: { name: string; value: number }[]
+    patientsOverTime: { date: string; count: number }[]
+    totalPatients: number
+    totalStaff: number
+}
+
 export default function AnalyticsPage() {
     const [loading, setLoading] = useState(true)
-    const [stats, setStats] = useState<any>(null)
+    const [stats, setStats] = useState<Stats | null>(null)
     const supabase = createClientComponentClient()
 
     useEffect(() => {
@@ -50,23 +58,23 @@ export default function AnalyticsPage() {
             // Process Data for Charts
 
             // 1. Patients by Status
-            const statusCount = patients?.reduce((acc: any, curr) => {
+            const statusCount = patients?.reduce((acc: Record<string, number>, curr) => {
                 acc[curr.status] = (acc[curr.status] || 0) + 1
                 return acc
-            }, {})
+            }, {} as Record<string, number>) || {}
 
-            const statusData = Object.keys(statusCount || {}).map(key => ({
+            const statusData = Object.keys(statusCount).map(key => ({
                 name: key.charAt(0).toUpperCase() + key.slice(1),
                 value: statusCount[key]
             }))
 
             // 2. Staff Distribution
-            const roleCount = staff?.reduce((acc: any, curr) => {
+            const roleCount = staff?.reduce((acc: Record<string, number>, curr) => {
                 acc[curr.role] = (acc[curr.role] || 0) + 1
                 return acc
-            }, {})
+            }, {} as Record<string, number>) || {}
 
-            const roleData = Object.keys(roleCount || {}).filter(r => r !== 'owner').map(key => ({
+            const roleData = Object.keys(roleCount).filter(r => r !== 'owner').map(key => ({
                 name: key.charAt(0).toUpperCase() + key.slice(1),
                 value: roleCount[key]
             }))
@@ -186,7 +194,7 @@ export default function AnalyticsPage() {
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
-                                    {stats?.roleData.map((entry: any, index: number) => (
+                                    {stats?.roleData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
                                     ))}
                                 </Pie>
@@ -194,7 +202,7 @@ export default function AnalyticsPage() {
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="flex justify-center gap-6 mt-4">
-                            {stats?.roleData.map((entry: any, index: number) => (
+                            {stats?.roleData.map((entry, index) => (
                                 <div key={entry.name} className="flex items-center gap-2">
                                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                                     <span className="text-sm font-medium text-slate-600">{entry.name}</span>

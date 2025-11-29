@@ -10,6 +10,7 @@ export default async function DashboardLayout({
     children: React.ReactNode
 }) {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user } } = await supabase.auth.getUser()
 

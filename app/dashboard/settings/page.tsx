@@ -10,11 +10,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Loader2, Save } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DepartmentsManager } from "@/components/dashboard/departments-manager"
+import { Hospital } from "@/types"
 
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-    const [hospital, setHospital] = useState<any>(null)
+    const [hospital, setHospital] = useState<Hospital | null>(null)
     const [name, setName] = useState('')
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -59,14 +60,15 @@ export default function SettingsPage() {
             const { error } = await supabase
                 .from('hospitals')
                 .update({ name })
-                .eq('id', hospital.id)
+                .eq('id', hospital?.id)
 
             if (error) throw error
 
             setMessage({ type: 'success', text: 'Hospital settings updated successfully.' })
             router.refresh()
-        } catch (err: any) {
-            setMessage({ type: 'error', text: err.message })
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+            setMessage({ type: 'error', text: errorMessage })
         } finally {
             setSaving(false)
         }
@@ -90,7 +92,7 @@ export default function SettingsPage() {
                     <Card className="border-slate-200 shadow-lg shadow-slate-200/50">
                         <CardHeader>
                             <CardTitle>General Information</CardTitle>
-                            <CardDescription>Update your hospital's public profile and details.</CardDescription>
+                            <CardDescription>Update your hospital&apos;s public profile and details.</CardDescription>
                         </CardHeader>
                         <form onSubmit={handleSave}>
                             <CardContent className="space-y-4">
@@ -113,8 +115,8 @@ export default function SettingsPage() {
                                     <Label>Subscription Status</Label>
                                     <div className="flex items-center gap-2">
                                         <span className={`px-2.5 py-1 text-xs font-medium rounded-full capitalize ${hospital?.subscription_status === 'active' ? 'bg-green-100 text-green-800' :
-                                                hospital?.subscription_status === 'trial' ? 'bg-blue-100 text-blue-800' :
-                                                    'bg-slate-100 text-slate-800'
+                                            hospital?.subscription_status === 'trial' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-slate-100 text-slate-800'
                                             }`}>
                                             {hospital?.subscription_status} Plan
                                         </span>

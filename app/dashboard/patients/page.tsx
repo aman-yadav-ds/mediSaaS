@@ -11,9 +11,11 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Patient, Visit } from "@/types"
 
 export default async function PatientsPage() {
     const cookieStore = await cookies()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServerComponentClient({ cookies: () => cookieStore as any })
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -43,6 +45,7 @@ export default async function PatientsPage() {
         `)
         .eq('hospital_id', profile.hospital_id)
         .order('created_at', { ascending: false })
+        .returns<(Patient & { visits: Visit[] })[]>()
 
     return (
         <div className="space-y-8">
@@ -77,9 +80,9 @@ export default async function PatientsPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                patients?.map((patient) => {
+                                patients?.map((patient: Patient & { visits: Visit[] }) => {
                                     // Find latest visit
-                                    const latestVisit = patient.visits?.sort((a: any, b: any) =>
+                                    const latestVisit = patient.visits?.sort((a: Visit, b: Visit) =>
                                         new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime()
                                     )[0]
 

@@ -7,8 +7,9 @@ export async function GET(request: Request) {
     const code = requestUrl.searchParams.get('code')
 
     if (code) {
-        console.log('Auth Callback: Exchanging code for session', code)
+
         const cookieStore = await cookies()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
         const { error } = await supabase.auth.exchangeCodeForSession(code)
 
@@ -17,11 +18,10 @@ export async function GET(request: Request) {
             return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url))
         }
 
-        console.log('Auth Callback: Session established successfully')
         const next = requestUrl.searchParams.get('next')
         return NextResponse.redirect(new URL(next || '/dashboard', request.url))
     }
 
-    console.log('Auth Callback: No code provided')
+
     return NextResponse.redirect(new URL('/login?error=no_code', request.url))
 }

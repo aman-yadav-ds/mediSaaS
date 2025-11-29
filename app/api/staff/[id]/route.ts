@@ -12,6 +12,7 @@ export async function DELETE(
 
         // 1. Verify the requester is an Owner
         const cookieStore = await cookies()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
         const { data: { user } } = await supabase.auth.getUser()
 
@@ -72,10 +73,11 @@ export async function DELETE(
             .eq('id', id)
 
         return NextResponse.json({ success: true })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Delete error:', error)
+        const message = error instanceof Error ? error.message : 'Internal server error'
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: message },
             { status: 500 }
         )
     }
