@@ -7,17 +7,17 @@ export async function middleware(req: NextRequest) {
   const supabase = createMiddlewareClient({ req, res })
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 1. Auth Check: If no user and trying to access dashboard, redirect to login
+  // 1. Security First: No user? No dashboard for you.
   if (!user && req.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  // 2. Auth Check: If user exists and trying to access login/register, redirect to dashboard
+  // 2. Already logged in? Let's get you to the dashboard.
   if (user && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/register-hospital')) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
-  // 3. RBAC Check: If user is in dashboard, check role permissions
+  // 3. Role Check: Make sure they're allowed to be here.
   if (user && req.nextUrl.pathname.startsWith('/dashboard')) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -29,25 +29,25 @@ export async function middleware(req: NextRequest) {
       const role = profile.role
       const path = req.nextUrl.pathname
 
-      // Owner has full access to everything
+      // The Boss gets to see everything.
       if (role === 'owner') {
         return res
       }
 
-      // Define allowed paths for other roles
+      // Where is everyone else allowed to go?
       const allowedPaths: Record<string, string[]> = {
         doctor: ['/dashboard/doctor'],
         nurse: ['/dashboard/nurse'],
-        receptionist: ['/dashboard/reception', '/dashboard/appointments', '/dashboard/billing'],
+        receptionist: ['/dashboard/reception', '/dashboard/billing'],
       }
 
       const userAllowedPaths = allowedPaths[role] || []
 
-      // Check if the current path is allowed
+      // Are they lost?
       // We allow exact match of allowed paths or sub-paths
       const isAllowed = userAllowedPaths.some(allowedPath => path.startsWith(allowedPath))
 
-      // Special handling for the root /dashboard path
+      // If they hit the main dashboard, send them to their home base.
       // If they are at /dashboard, we redirect them to their main home to be helpful (and consistent with page.tsx)
       if (path === '/dashboard') {
         if (role === 'doctor') return NextResponse.redirect(new URL('/dashboard/doctor', req.url))

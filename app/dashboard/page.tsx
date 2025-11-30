@@ -17,7 +17,7 @@ export default async function DashboardPage() {
         redirect('/login')
     }
 
-    // Fetch Profile
+    // Who is this user?
     const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -29,13 +29,13 @@ export default async function DashboardPage() {
     }
 
     if (profile.role !== 'owner') {
-        // If not owner, redirect to their specific dashboard
+        // Not the owner? Send them to their own corner.
         if (profile.role === 'receptionist') redirect('/dashboard/reception')
         if (profile.role === 'nurse') redirect('/dashboard/nurse')
         if (profile.role === 'doctor') redirect('/dashboard/doctor')
     }
 
-    // Fetch Staff (Only for Owner)
+    // Get the team list (Owner only)
     const { data: staff } = await supabase
         .from('profiles')
         .select('*')
@@ -44,13 +44,13 @@ export default async function DashboardPage() {
         .order('created_at', { ascending: false })
         .returns<Profile[]>()
 
-    // Fetch Patients Count
+    // How many patients do we have?
     const { count: patientCount } = await supabase
         .from('patients')
         .select('*', { count: 'exact', head: true })
         .eq('hospital_id', profile.hospital_id)
 
-    // Fetch Patients for Activity Chart (Last 7 Days)
+    // Grab recent patient data for the chart (Last 7 Days)
     // eslint-disable-next-line react-hooks/purity
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const { data: recentPatients } = await supabase
@@ -60,7 +60,7 @@ export default async function DashboardPage() {
         .gte('created_at', sevenDaysAgo)
         .returns<Patient[]>()
 
-    // Process Chart Data
+    // Crunch the numbers for the graph
     const last7Days = [...Array(7)].map((_, i) => {
         const d = new Date()
         d.setDate(d.getDate() - i)
@@ -72,7 +72,7 @@ export default async function DashboardPage() {
         return { date, count }
     })
 
-    // Calculate Staff Counts
+    // Count up the staff members
     const doctorCount = staff?.filter((m: Profile) => m.role === 'doctor').length || 0
     const nurseCount = staff?.filter((m: Profile) => m.role === 'nurse').length || 0
     const receptionistCount = staff?.filter((m: Profile) => m.role === 'receptionist').length || 0

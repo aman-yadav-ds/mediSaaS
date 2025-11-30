@@ -19,16 +19,16 @@ export default function LoginPage() {
     const router = useRouter()
     const supabase = createClientComponentClient()
 
-    // Handle implicit flow (hash fragment) login
+    // Catch the hash fragment if we're coming from a magic link
 
     useEffect(() => {
         const handleHashLogin = async () => {
-            // Check for hash in URL (implicit flow)
+            // Do we have a token in the URL?
             if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
                 setLoading(true)
 
 
-                // Parse hash manually
+                // Grab the token from the URL
                 const hash = window.location.hash.substring(1)
                 const params = new URLSearchParams(hash)
                 const accessToken = params.get('access_token')
@@ -59,9 +59,17 @@ export default function LoginPage() {
         handleHashLogin()
 
         const checkSession = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                router.replace('/dashboard')
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser()
+                if (error || !user) {
+                    await supabase.auth.signOut()
+                    return
+                }
+                if (user) {
+                    router.replace('/dashboard')
+                }
+            } catch {
+                await supabase.auth.signOut()
             }
         }
 

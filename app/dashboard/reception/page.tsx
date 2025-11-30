@@ -15,7 +15,7 @@ export default async function ReceptionPage() {
 
     if (error || !user) redirect('/auth/signout')
 
-    // Fetch data in parallel
+    // Grab both the profile and visits at the same time
     const [profileResult, visitsResult] = await Promise.all([
         supabase
             .from('profiles')
